@@ -77,6 +77,10 @@ Silakan pilih menu berikut:
 6️⃣ Keunggulan Sekolah
 7️⃣ Download File
 
+🌐 Kunjungi website kami:
+https://sdn1sukamanah.netlify.app/
+
+
 Balas dengan angka sesuai menu.
 Tekan 0 kapan saja untuk kembali.`;
 
@@ -95,9 +99,14 @@ client.on('ready', () => {
 // =========================
 // MAIN MESSAGE HANDLER
 // =========================
+
 client.on('message', async (message) => {
 
+    if (message.from.includes('@g.us')) return;
+
     if (isCooldown(message.from)) return;
+    
+
 
     const text = message.body.trim().toLowerCase();
 
@@ -367,7 +376,10 @@ process.on('unhandledRejection', error => {
 // =========================
 client.on('disconnected', reason => {
     log(`Bot disconnected: ${reason}`);
-    setTimeout(() => client.initialize(), 5000);
+    setTimeout(() => {
+        client.destroy();
+        client.initialize();
+    }, 5000);
 });
 
 client.initialize();
