@@ -1,0 +1,14 @@
+Unhandled Rejection: Error: Navigating frame was detached
+    at <instance_members_initializer> (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\LifecycleWatcher.js:36:14)
+    at new LifecycleWatcher (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\LifecycleWatcher.js:40:16)
+    at CdpFrame.goto (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Frame.js:149:29)
+    at CdpFrame.<anonymous> (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\util\decorators.js:109:27)
+    at CdpPage.goto (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Page.js:580:43)
+    at Client.initialize (C:\Bot WA\node_modules\whatsapp-web.js\src\Client.js:367:20) {
+  cause: Error: LifecycleWatcher disposed
+      at LifecycleWatcher.dispose (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\LifecycleWatcher.js:173:29)
+      at CdpFrame.goto (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Frame.js:169:25)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async CdpPage.goto (C:\Bot WA\node_modules\puppeteer-core\lib\cjs\puppeteer\api\Page.js:580:20)
+      at async Client.initialize (C:\Bot WA\node_modules\whatsapp-web.js\src\Client.js:367:9)
+}

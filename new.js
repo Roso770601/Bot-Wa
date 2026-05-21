@@ -44,7 +44,7 @@ const cooldown = new Map();
 function isCooldown(user) {
     if (cooldown.has(user)) return true;
     cooldown.set(user, true);
-    setTimeout(() => cooldown.delete(user), 2000);
+    setTimeout(() => cooldown.delete(user), 5000);
     return false;
 }
 
@@ -64,6 +64,7 @@ if (fs.existsSync('admin.txt')) {
 // =========================
 const daftarOnline = new Set();
 const firstGreeting = new Set();
+let lastSend = {}; // menyimpan waktu terakhir kirim gambar
 
 const menu = `Terima kasih telah menghubungi *SDN 1 Sukamanah*.
 Layanan Informasi Digital
@@ -78,7 +79,7 @@ Silakan pilih menu berikut:
 7️⃣ Download File
 
 🌐 Kunjungi website kami:
-https://sdn1sukamanah.netlify.app/
+https://sdn1sukamanah.my.id/
 
 
 Balas dengan angka sesuai menu.
@@ -99,48 +100,143 @@ client.on('ready', () => {
 // =========================
 // MAIN MESSAGE HANDLER
 // =========================
+async function kirimGreeting(user) {
+    const media = MessageMedia.fromFilePath('./gambar/ucapan.jpg');
+
+    await client.sendMessage(user, media, {
+        caption: `👋 Selamat datang di layanan informasi digital
+*SDN 1 Sukamanah*`
+    });
+}
 
 client.on('message', async (message) => {
 
+let sender = message.from;
+
+if (sender.includes('@c.us')) {
+    sender = sender.split('@')[0];
+}
+
+const text = message.body.trim().toLowerCase();
+
+console.log("Admin list:", ADMIN_NUMBERS);
+console.log("Sender:", sender);
+console.log("FROM:", message.from);
+console.log("AUTHOR:", message.author);
+console.log("BODY:", message.body);
+
+// =========================
+// CEK JUMLAH PENDAFTAR
+// =========================
+if (text === '#jumlah') {
+
+let web = 0;
+let wa = 0;
+
+if (fs.existsSync('ppdb_web.txt')) {
+    const data = fs.readFileSync('ppdb_web.txt','utf8');
+    web = (data.match(/Waktu:/g) || []).length;
+}
+
+if (fs.existsSync('daftar.txt')) {
+    const data = fs.readFileSync('daftar.txt','utf8');
+    wa = (data.match(/Waktu:/g) || []).length;
+}
+
+const total = web + wa;
+
+await message.reply(
+`📊 DATA PENDAFTAR PPDB
+
+Total : ${total} pendaftar`
+);
+
+return;
+}
+// =========================
+// PENDAFTARAN DARI WEBSITE
+// =========================
+if (message.body.trim().toUpperCase().startsWith('#PPDBWEB')) {
+
+    const waktu = new Date().toLocaleString('id-ID');
+
+    fs.appendFileSync('ppdb_web.txt',
+`Waktu: ${waktu}
+Data:
+${message.body}
+-------------------------
+`);
+
+  await message.reply(
+`✅ Data pendaftaran telah diterima.
+
+Terima kasih telah melakukan pendaftaran awal PPDB SDN 1 Sukamanah melalui website.
+
+Selanjutnya, mohon orang tua/wali calon siswa datang langsung ke sekolah pada jam kerja untuk:
+
+• Mengisi formulir pendaftaran lengkap
+• Menyerahkan berkas persyaratan
+
+Berkas yang perlu dibawa:
+• Fotokopi Kartu Keluarga
+• Fotokopi Akta Kelahiran
+
+📍 Silakan datang ke SDN 1 Sukamanah pada hari dan jam kerja.
+
+Jam pelayanan:
+• Senin – Jumat
+• 08.00 – 13.00 WIB
+
+Terima kasih.`
+    );
+
+    // kirim notifikasi ke admin
+    for (const admin of ADMIN_NUMBERS) {
+    await client.sendMessage(admin + "@c.us",
+`📢 PENDAFTAR PPDB DARI WEBSITE
+
+${message.body}`
+    );
+}
+
+    return;
+}
     if (message.from.includes('@g.us')) return;
 
     if (isCooldown(message.from)) return;
-    
+	daftarOnline.add(message.from);
 
-
-    const text = message.body.trim().toLowerCase();
+if (!firstGreeting.has(message.from)) {
+    firstGreeting.add(message.from);
+    await kirimGreeting(message.from);
+    await typing(message,1500);
+}
+     
 
     // Kembali ke menu
     if (text === '0') {
-        daftarOnline.delete(message.from);
-        await message.reply(menu);
-        return;
-    }
+    daftarOnline.delete(message.from);
 
-    // Salam
-    if (
-        text.includes('assalamualaikum') ||
-        text.includes('assalamu\'alaikum') ||
-        text.includes('asalamualaikum') ||
-        text.includes('assalamu alaikum') ||
-        text === 'salam'
-    ) {
-        await message.reply("Wa'alaikumussalam Wr. Wb. 🙏");
+    await message.reply(menu);
+    return;
+}
 
-        if (!firstGreeting.has(message.from)) {
-            const filePath = path.join(__dirname, 'gambar', 'ramadan.jpg');
-            if (fs.existsSync(filePath)) {
-                const media = MessageMedia.fromFilePath(filePath);
-                await client.sendMessage(message.from, media, {
-                    caption: '🌙 Marhaban Ya Ramadhan'
-                });
-            }
-            firstGreeting.add(message.from);
-        }
+// Salam
+if (
+    text.includes('assalamualaikum') ||
+    text.includes("assalamu'alaikum") ||
+    text.includes('asalamualaikum') ||
+    text.includes('assalamu alaikum') ||
+    text === 'salam'
+) {
+    await message.reply("Wa'alaikumussalam Wr. Wb. 🙏");
 
-        await message.reply("\n" + menu);
-        return;
-    }
+    await typing(message,1500);
+
+    await message.reply(menu);
+
+    return;
+}
 
     // MENU 1
     if (text === '1') {
@@ -151,6 +247,7 @@ client.on('message', async (message) => {
 🗺️ https://maps.app.goo.gl/g8LJ9wx391HQ1qTT9
 ⏰ Senin - Jumat 07.00 – 12.45
 📷 IG: sdn1sukamanahcipedes
+website: https://sdn1sukamanah.my.id/
 
 Tekan 0 untuk kembali.`
         );
@@ -168,7 +265,11 @@ Tekan 0 untuk kembali.`
         await client.sendMessage(message.from,
 `📚 *PENGUMUMAN*
 
-Jadwal libur puasa dan hari raya Idul Fitri 1447H/2026M`
+Pendaftaraan PPDB SDN 1 Sukamanah sudah dibuka!
+
+Silakan kunjungi website kami untuk informasi lebih lanjut:
+https://sdn1sukamanah.my.id/ppdb.html
+`
         );
 
         await chat.sendStateTyping();
@@ -188,7 +289,6 @@ Jadwal libur puasa dan hari raya Idul Fitri 1447H/2026M`
             await message.reply('File gambar tidak ditemukan.');
         }
 
-        await message.reply("\nuntuk agenda kegiatan ramadan dan idul fitri lebih lengkap silakan download file di menu download.");
         await message.reply("\nTekan 0 untuk kembali ke menu utama.");
         return;
     }
@@ -233,67 +333,22 @@ Tekan 0 untuk kembali.`
 
     // MENU 42
     if (text === '42') {
-        await typing(message);
-        daftarOnline.add(message.from);
-        await message.reply("Silakan kirim nomor HP dengan format 08xxxxxxxxxx");
-        return;
-    }
+    await typing(message);
+    await message.reply(
+`📝 PENDAFTARAN ONLINE SDN 1 SUKAMANAH
 
-    // PROSES DAFTAR
-    if (daftarOnline.has(message.from)) {
+Silakan lakukan pendaftaran melalui website berikut:
 
-        const nomor = message.body.trim();
+🌐 https://sdn1sukamanah.my.id/daftar.html
 
-        if (/^08[0-9]{8,12}$/.test(nomor)) {
+Setelah mengisi formulir, data akan langsung masuk ke sistem sekolah.
 
-            const waktu = new Date().toLocaleString('id-ID');
-            fs.appendFileSync('daftar.txt',
-`Waktu: ${waktu}
-Nomor: ${nomor}
-Dari : ${message.from}
------------------\n`);
+Terima kasih.`
+);
+    return;
+}
 
-            await message.reply("✅ Nomor telah kami simpan. Admin akan menghubungi Bapak/Ibu secara langsung melalui telepon untuk memberikan informasi lengkap dan panduan pendaftaran.");
-
-            for (const admin of ADMIN_NUMBERS) {
-                await client.sendMessage(admin,
-`📢 PENDAFTAR BARU
-🕒 ${waktu}
-📱 ${nomor}`);
-            }
-
-            daftarOnline.delete(message.from);
-            return;
-
-        } else {
-            await message.reply("Format salah. Gunakan 08xxxxxxxxxx");
-            return;
-        }
-    }
-// =========================
-    // MENU 5 - LOGO SEKOLAH
     // =========================
-    if (text === '5') {
-        const filePath = path.join(__dirname, 'gambar', 'logo.jpg');
-
-        if (fs.existsSync(filePath)) {
-            const media = MessageMedia.fromFilePath(filePath);
-			const chat = await message.getChat();
-    await chat.sendStateTyping();
-
-    await new Promise(resolve => setTimeout(resolve, 1500));
-            await client.sendMessage(message.from, media, {
-                caption: '🏫 Logo SDN 1 Sukamanah\n\nTekan 0 untuk kembali.'
-                });
-        } else {
-            await message.reply('File logo tidak ditemukan.');
-
-	}
-        return;
-    }
-
-
-// =========================
     // MENU 6 - KEUNGGULAN
     // =========================
     if (text === '6') {
